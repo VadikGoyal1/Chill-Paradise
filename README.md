@@ -7,7 +7,6 @@ This custom landing page showcases your Discord community with glowing UI, smoot
 
 👉 [Join the Server](https://discord.gg/PJCSsBnaZc)  
 👉 [Preview the Website](https://your-github-username.github.io/your-repo-name/)  
-_(Replace with your actual GitHub Pages link)_
 
 ---
 
