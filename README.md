@@ -6,7 +6,7 @@ This custom landing page showcases your Discord community with glowing UI, smoot
 ## 🎧 Live Demo
 
 👉 [Join the Server](https://discord.gg/PJCSsBnaZc)  
-👉 [Preview the Website](https://your-github-username.github.io/your-repo-name/)  
+👉 [Preview the Website](https://VadikGoyal1.github.io/Chill-Paradise/)  
 
 ---
 
