@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chill Paradise</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="content-hidden">
+    <div id="loader">
+        <div class="loader-text">Loading Chill Paradise...</div>
+    </div>
+
+    <div class="cursor" id="custom-cursor"></div>
+    <div class="corner-glow top-left"></div>
+    <div class="corner-glow top-right"></div>
+    <div class="corner-glow bottom-left"></div>
+    <div class="corner-glow bottom-right"></div>
+
+    <div class="scroll-container">
+        <div class="main">
+            <div class="album-art-container">
+                <div class="album-art" title="Hover for Music Player"></div>
+            </div>
+            <h1 class="anime-title">Coming Soon...</h1>
+
+            <div class="member-count-display" style="margin-top: 30px; margin-bottom: 30px;">
+                Join <span id="total-members">...</span> members | <span id="online-members">...</span> Online Now!
+            </div>
+            <div class="buttons" id="join-button-group">
+                <a href="https://discord.gg/PJCSsBnaZc" target="_blank" class="btn cta" data-glow-id="glow-join" style="background-color: #5865F2; border-color: #5865F2; cursor: none;">
+                    <span class="link-text">🚀 Join Server!</span>
+                    <div class="hover-glow" id="glow-join"></div>
+                </a>
+        
+        </div>
+        
+    <div class="audio-player-container">
+        <div class="player-glow"></div>
+        <div class="audio-player">
+            <div class="music-widget glass">
+                <div class="song-info">
+                    <div class="song-title">Loading...</div>
+                    <input type="range" class="progress-bar" value="0" min="0" max="0">
+                    <div class="time-display">
+                        <span class="current-time">0:00</span> / <span class="duration">0:00</span>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="prev" title="Previous Track">⏮</button>
+                    <button class="toggle" title="Play/Pause">▶</button>
+                    <button class="next" title="Next Track">⏭</button>
+                     <div class="volume-control">
+                         <button class="volume-icon" title="Mute/Unmute">🔊</button>
+                         <input type="range" class="volume-slider" value="1" min="0" max="1" step="0.01">
+                     </div>
+                </div>
+            </div>
+
+            <audio class="audio"></audio>
+        </div>
+    </div>
+    <script>
+        // --- JavaScript Starts Here ---
+        console.log("Script started.");
+        console.log("Animejs loaded:", typeof anime);
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const audio = document.querySelector(".audio");
+            const toggleBtn = document.querySelector(".toggle");
+            const prevBtn = document.querySelector(".prev");
+            const nextBtn = document.querySelector(".next");
+            const progressBar = document.querySelector(".progress-bar");
+            const volumeSlider = document.querySelector(".volume-slider");
+            const songTitleElement = document.querySelector(".song-title");
+            const currentTimeElement = document.querySelector(".current-time");
+            const durationElement = document.querySelector(".duration");
+            const volumeIcon = document.querySelector(".volume-icon");
+            const audioPlayerContainer = document.querySelector(".audio-player-container");
+            const albumArtContainer = document.querySelector(".album-art-container");
+            const albumArtElement = document.querySelector(".album-art");
+
+             const playerGlowElement = document.querySelector(".player-glow"); // NEW: Get the glow element
+
+            let lastVolume = audio.volume;
+
+            const songs = [
+                { src: "songs/Adele_Skyfall.mp3", name: "Skyfall By Adele", image: "images/Adele_Skyfall.jpeg" },
+                { src: "songs/J.I.D_Surround_Sound.mp3", name: "Surround Sound By J.I.D", image: "images/J.I.D_Surround_Sound.jpeg" },
+                { src: "songs/The-Weeknd_One-Of-The-Girls.mp3", name: "One Of The Girls By The Weeknd", image: "images/default-album-art.jpg" },
+            ];
+
+            let currentSongIndex = 0;
+            let isPlaying = false;
+
+            function loadSong(index) {
+                const song = songs[index];
+                audio.src = song.src;
+                songTitleElement.textContent = song.name;
+                albumArtElement.style.backgroundImage = `url(${song.image})`;
+                progressBar.value = 0;
+                currentTimeElement.textContent = '0:00';
+                durationElement.textContent = '0:00';
+            }
+
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            // --- CHANGES START HERE ---
+
+            loadSong(currentSongIndex); // Load the first song
+            audio.volume = 0.07; // Set default volume to 7%
+            volumeSlider.value = audio.volume; // Update slider position
+            updateVolumeIcon(); // Update volume icon
+
+            // --- CHANGES END HERE ---
+
+
+            // Listen for the 'play' event to update UI state
+            audio.addEventListener('play', () => {
+                isPlaying = true;
+                toggleBtn.textContent = "⏸";
+                albumArtElement.classList.add('playing');
+            });
+
+             // Listen for the 'pause' event to update UI state
+            audio.addEventListener('pause', () => {
+                isPlaying = false;
+                toggleBtn.textContent = "▶";
+                albumArtElement.classList.remove('playing');
+            });
+
+            // Handle play/pause toggle button click
+            toggleBtn.addEventListener("click", () => {
+                 if (!audio.paused) { // Check actual audio state, not just isPlaying flag
+                     audio.pause();
+                 } else {
+                     // Attempt to play. This click is a user gesture.
+                     audio.play().catch(error => console.log("Play failed after click:", error)); // Add catch for promise
+                 }
+            });
+
+
+            nextBtn.addEventListener("click", () => {
+                currentSongIndex = (currentSongIndex + 1) % songs.length;
+                loadSong(currentSongIndex);
+                 // Attempt to play the new song. The click was a user gesture.
+                 audio.play().catch(error => console.log("Next song play failed:", error)); // Add catch
+            });
+
+            prevBtn.addEventListener("click", () => {
+                currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+                loadSong(currentSongIndex);
+                 // Attempt to play the new song. The click was a user gesture.
+                 audio.play().catch(error => console.log("Previous song play failed:", error)); // Add catch
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                if (!audio.duration) return;
+                progressBar.value = (audio.currentTime / audio.duration) * 100;
+                currentTimeElement.textContent = formatTime(audio.currentTime);
+            });
+
+            audio.addEventListener('loadedmetadata', () => {
+                progressBar.max = 100;
+                durationElement.textContent = formatTime(audio.duration);
+            });
+
+            audio.addEventListener('ended', () => {
+                 // Automatically play the next song when the current one ends
+                 currentSongIndex = (currentSongIndex + 1) % songs.length;
+                 loadSong(currentSongIndex);
+                 audio.play().catch(error => console.log("Autoplay next song after end failed:", error)); // Add catch
+            });
+
+            let isDraggingProgress = false;
+            progressBar.addEventListener('mousedown', () => {
+                isDraggingProgress = true;
+                if (isPlaying) audio.pause();
+            });
+            progressBar.addEventListener('mouseup', () => {
+                isDraggingProgress = false;
+                audio.currentTime = (parseFloat(progressBar.value) / 100) * audio.duration;
+                 // Resume playback if it was playing before dragging
+                 if (!audio.paused && toggleBtn.textContent === "⏸") { audio.play().catch(error => console.log("Play after scrub failed:", error)); }
+                 else if (toggleBtn.textContent === "⏸") { audio.play().catch(error => console.log("Play after scrub failed:", error)); } // Ensure play if it was visually 'playing'
+            });
+             progressBar.addEventListener('input', () => {
+                 if (!audio.duration) return;
+                 const seekTime = (parseFloat(progressBar.value) / 100) * audio.duration;
+                 currentTimeElement.textContent = formatTime(seekTime);
+             });
+
+            // volumeSlider.value = audio.volume; // Removed, set above
+            volumeSlider.addEventListener('input', () => {
+                audio.volume = volumeSlider.value;
+                updateVolumeIcon();
+                if (audio.volume > 0) { lastVolume = audio.volume; }
+            });
+
+             volumeIcon.addEventListener('click', () => {
+                 if (audio.volume > 0) {
+                     lastVolume = audio.volume;
+                     audio.volume = 0;
+                     volumeSlider.value = 0;
+                 } else {
+                     audio.volume = lastVolume > 0 ? lastVolume : 0.5;
+                     volumeSlider.value = audio.volume;
+                 }
+                 updateVolumeIcon();
+             });
+
+            function updateVolumeIcon() {
+                if (audio.volume === 0) { volumeIcon.textContent = '🔇'; }
+                else if (audio.volume < 0.5) { volumeIcon.textContent = '🔈'; }
+                else { volumeIcon.textContent = '🔊'; }
+            }
+            // updateVolumeIcon(); // Removed, called above
+
+
+            // --- Hover Show/Hide Logic (Targeting Album Art) ---
+
+            let hoverTimeout;
+            const hideDelay = 600; // Milliseconds to wait before hiding
+            const cursorMediaQuery = window.matchMedia('(max-width: 768px), (pointer: coarse)');
+
+
+             if (albumArtContainer && audioPlayerContainer && playerGlowElement) { // Ensure playerGlowElement is found
+
+                 // Initialize state: Player hidden, Album Art visible, Player Glow hidden
+                 // Using translateY slightly down for player, and no translateY for disk initially
+                 anime.set(audioPlayerContainer, { opacity: 0, pointerEvents: 'none', translateY: 20, scale: 0.95 });
+                 anime.set(albumArtContainer, { opacity: 1, pointerEvents: 'auto', translateY: 0, scale: 1 });
+                 anime.set(playerGlowElement, { opacity: 0, scale: 0.5 });
+
+
+                 // --- Event Listeners ---
+
+                 // When mouse enters the Album Art disk
+                 albumArtContainer.addEventListener('mouseenter', () => {
+                     // Disable toggle on small screens
+                     if (cursorMediaQuery.matches) return;
+                     clearTimeout(hoverTimeout); // Clear any pending hide timeout
+                     showAudioPlayer(); // Show the player (and hide the disk and show player glow)
+                 });
+
+                 // When mouse leaves the Album Art disk
+                 albumArtContainer.addEventListener('mouseleave', () => {
+                     // Disable toggle on small screens
+                     if (cursorMediaQuery.matches) return;
+                     // Start a timer to hide player (and show disk)
+                     hoverTimeout = setTimeout(() => {
+                         // NO check needed inside timeout. If timeout finishes, mouse is not hovering the player.
+                         hideAudioPlayer(); // Hide the player (and show the disk and hide player glow)
+                     }, hideDelay);
+                 });
+
+                 // When mouse enters the Player container (this area includes the widget and glow)
+                 audioPlayerContainer.addEventListener('mouseenter', () => {
+                     // Disable toggle on small screens
+                     if (cursorMediaQuery.matches) return;
+                     clearTimeout(hoverTimeout); // Clear any pending hide timeout from disk mouseleave
+                     showAudioPlayer(); // Ensure player is shown (and disk hidden and player glow shown)
+                 });
+
+                 // When mouse leaves the Player container
+                 audioPlayerContainer.addEventListener('mouseleave', () => {
+                     // Disable toggle on small screens
+                     if (cursorMediaQuery.matches) return;
+                     // Start a timer to hide player (and show disk)
+                     hoverTimeout = setTimeout(() => {
+                          // NO check needed inside timeout. If timeout finishes, mouse is not hovering the disk.
+                          hideAudioPlayer(); // Hide the player (and show the disk and hide player glow)
+                     }, hideDelay);
+                 });
+
+                 // --- Animation Functions using Anime.js ---
+
+                 function showAudioPlayer() {
+                     // Stop any currently running animations on all relevant containers
+                     anime.remove(audioPlayerContainer);
+                     anime.remove(albumArtContainer);
+                      anime.remove(playerGlowElement); // Stop glow animation loop if running
+
+                     // Animate Player In
+                     anime({
+                         targets: audioPlayerContainer,
+                         opacity: [anime.get(audioPlayerContainer, 'opacity'), 1],
+                         translateY: [anime.get(audioPlayerContainer, 'translateY') || 20, 0], // Animate up
+                         scale: [anime.get(audioPlayerContainer, 'scale') || 0.95, 1],
+                         duration: 400,
+                         easing: 'easeOutQuad',
+                         autoplay: true,
+                         complete: () => {
+                             audioPlayerContainer.style.pointerEvents = 'auto'; // Enable interaction after fade-in
+                         }
+                     });
+
+                      // Animate Player Glow In
+                      anime({
+                          targets: playerGlowElement,
+                          opacity: [anime.get(playerGlowElement, 'opacity'), 0.7], // Fade glow in
+                          scale: [anime.get(playerGlowElement, 'scale') || 0.5, 1], // Scale up the glow
+                          duration: 500, // Slightly longer or offset
+                          delay: 50, // Start slightly after player animation
+                          easing: 'easeOutQuad',
+                          autoplay: true,
+                          loop: true, // Loop the glow animation
+                          direction: 'alternate', // Alternate direction for pulse effect
+                          // Remove complete callback if using infinite loop
+                      });
+
+
+                     // Animate Album Art Out
+                     anime({
+                         targets: albumArtContainer,
+                         opacity: [anime.get(albumArtContainer, 'opacity'), 0],
+                         scale: [anime.get(albumArtContainer, 'scale') || 1, 0.9], // Scale down slightly
+                         duration: 400,
+                         easing: 'easeOutQuad',
+                         autoplay: true,
+                         complete: () => {
+                             albumArtContainer.style.pointerEvents = 'none'; // Disable interaction
+                             anime.set(albumArtContainer, { scale: 1, translateY: 0 }); // Reset transform
+                         }
+                     });
+                 }
+
+                 function hideAudioPlayer() {
+                     // Stop any currently running animations on all relevant containers
+                     anime.remove(audioPlayerContainer);
+                     anime.remove(albumArtContainer);
+                      anime.remove(playerGlowElement); // Stop glow animation loop
+
+                     // Animate Player Out
+                     anime({
+                         targets: audioPlayerContainer,
+                         opacity: [anime.get(audioPlayerContainer, 'opacity'), 0],
+                         translateY: [anime.get(audioPlayerContainer, 'translateY') || 0, 20], // Animate down slightly as it hides
+                         scale: [anime.get(audioPlayerContainer, 'scale') || 1, 0.95], // Scale down slightly
+                         duration: 400,
+                         easing: 'easeInQuad',
+                         autoplay: true,
+                         complete: () => {
+                             audioPlayerContainer.style.pointerEvents = 'none'; // Disable interaction after fade-out
+                             anime.set(audioPlayerContainer, { translateY: 0, scale: 1 }); // Reset transform
+                         }
+                     });
+
+                      // Animate Player Glow Out
+                      anime({
+                         targets: playerGlowElement,
+                         opacity: [anime.get(playerGlowElement, 'opacity'), 0], // Fade glow out
+                         scale: [anime.get(playerGlowElement, 'scale') || 1, 0.5], // Scale down the glow
+                         duration: 400,
+                         easing: 'easeInQuad',
+                         autoplay: true,
+                         complete: () => {
+                             anime.set(playerGlowElement, { opacity: 0, scale: 1 }); // Ensure final state is clean
+                         }
+                     });
+
+
+                     // Animate Album Art In
+                     anime({
+                         targets: albumArtContainer,
+                         opacity: [anime.get(albumArtContainer, 'opacity'), 1],
+                         scale: [anime.get(albumArtContainer, 'scale') || 0.9, 1], // Scale up slightly
+                         translateY: [anime.get(albumArtContainer, 'translateY') || 0, 0], // Animate to correct Y (should be 0 anyway)
+                         duration: 400,
+                         easing: 'easeInQuad',
+                         autoplay: true,
+                         complete: () => {
+                              albumArtContainer.style.pointerEvents = 'auto'; // Enable interaction
+                              anime.set(albumArtContainer, { translateY: 0, scale: 1 }); // Ensure final state is clean
+                         }
+                     });
+                 }
+
+
+             } else { // Fallback if elements are missing (mobile or elements not found)
+                 console.warn("[Audio Player] Album art container, player container, or player glow not found. Hover show/hide disabled.");
+                 // Ensure required elements are visible by default if hover logic fails on desktop
+                 if(!cursorMediaQuery.matches) { // Only apply this desktop fallback if not mobile
+                      if(audioPlayerContainer) {
+                           anime.set(audioPlayerContainer, { opacity: 0, pointerEvents: 'none', translateY: 20, scale: 0.95 }); // Player off
+                      }
+                       if(albumArtContainer) {
+                            anime.set(albumArtContainer, { opacity: 1, pointerEvents: 'auto', translateY: 0, scale: 1 }); // Disk on
+                       }
+                       if(playerGlowElement) {
+                            anime.set(playerGlowElement, { opacity: 0, scale: 0.5 }); // Glow off
+                       }
+                 }
+                 // Mobile is handled by the media query CSS
+             }
+
+            // --- End Hover Show/Hide Logic ---
+
+
+        });
+
+        // --- Rest of your existing script (Loader, Discord Fetch, Parallax, Cursor, Button Effects) ---
+        // (Keep this section as it is, ensuring the new elements and logic are integrated above)
+
+        const MIN_LOAD_TIME = 10000; // Minimum 10 seconds in milliseconds
+        let pageLoadStartTime = Date.now();
+        let discordFetchComplete = false;
+        let initialAnimationsComplete = false;
+        let loaderFadeOutStarted = false;
+
+        const loader = document.getElementById('loader');
+        const main = document.querySelector('.main');
+        const cornerGlows = document.querySelectorAll('.corner-glow');
+        const scrollContainer = document.querySelector('.scroll-container');
+        // Added audio element reference here for tryFinishLoading
+        const audioElementForLoad = document.querySelector(".audio");
+
+
+         // Check if essential elements are found immediately after definition
+         if (!loader || !main || cornerGlows.length === 0 || !scrollContainer || !audioElementForLoad) {
+                console.error("FATAL ERROR: Essential DOM elements missing! Check HTML structure and IDs/Classes. Missing element:", !loader ? '#loader' : !main ? '.main' : cornerGlows.length === 0 ? '.corner-glow' : !scrollContainer ? '.scroll-container' : !audioElementForLoad ? '.audio' : 'Unknown');
+                if (loader) loader.style.display = 'none';
+                discordFetchComplete = true;
+                initialAnimationsComplete = true;
+                console.log("Script execution potentially halted or limited due to missing essential elements.");
+         } else {
+                console.log("Essential DOM elements found.");
+                window.addEventListener('DOMContentLoaded', () => {
+                    console.log("[DOMContentLoaded] DOM ready. Starting initial animations and fetch.");
+                    pageLoadStartTime = Date.now();
+
+                    anime.timeline({
+                         complete: () => {
+                             initialAnimationsComplete = true;
+                             console.log("[DOMContentLoaded] Initial animations timeline complete.");
+                             tryFinishLoading();
+                         }
+                    })
+                         .add({
+                             targets: cornerGlows,
+                             opacity: [0, 0.7],
+                             duration: 1500,
+                             easing: 'easeOutSine'
+                         }, 0)
+                         .add({
+                             targets: '.anime-title',
+                             translateY: [-50, 0],
+                             opacity: [0, 1],
+                             duration: 1000,
+                             easing: 'easeOutExpo',
+                             complete: () => {
+                                 anime({
+                                      targets: '.anime-title',
+                                      textShadow: ['0 0 0px rgba(255,255,255,0)', '0 0 20px rgba(255,255,255,0.6)'],
+                                      duration: 1000,
+                                      easing: 'easeOutSine',
+                                       direction: 'alternate',
+                                       loop: 2
+                                  });
+                             }
+                         }, '-=800')
+                         .add({
+                             targets: '.member-count-display',
+                             translateY: [-20, 0],
+                             opacity: [0, 1],
+                             duration: 800,
+                             easing: 'easeOutExpo',
+                             begin: () => {
+                                 console.log("[DOMContentLoaded] Member count display animation starting.");
+                             }
+                         }, '-=400')
+                         .add({
+                             targets: '#join-button-group .cta',
+                             scale: [0.8, 1],
+                             opacity: [0, 1],
+                             duration: 800,
+                             easing: 'easeOutElastic(1, .8)'
+                         }, '-=400')
+                         .add({
+                             targets: '#button-group .cta',
+                             scale: [0.8, 1],
+                             opacity: [0, 1],
+                             delay: anime.stagger(150),
+                             duration: 800,
+                             easing: 'easeOutElastic(1, .8)'
+                         }, '-=500');
+
+                         // Start fetching member counts immediately
+                         fetchMemberCounts();
+
+                         console.log("[DOMContentLoaded] Initial animations and fetch initiated.");
+
+                     });
+         }
+
+
+        function tryFinishLoading() {
+             console.log(`[Loading Logic] Checking finish conditions: Discord=${discordFetchComplete}, InitialAnim=${initialAnimationsComplete}, FadeStarted=${loaderFadeOutStarted}`);
+             // Added check for audioElementForLoad here too
+             if (!loader || !main || cornerGlows.length === 0 || !scrollContainer || !audioElementForLoad) {
+                 console.error("[Loading Logic] Essential DOM elements missing in tryFinishLoading. Cannot proceed.");
+                 return;
+             }
+
+             if (discordFetchComplete && initialAnimationsComplete && !loaderFadeOutStarted) {
+                 loaderFadeOutStarted = true;
+
+                 const elapsedTime = Date.now() - pageLoadStartTime;
+                 const remainingTime = Math.max(0, MIN_LOAD_TIME - elapsedTime);
+
+                 console.log(`[Loading Logic] All required tasks complete. Elapsed: ${elapsedTime}ms. Waiting for ${remainingTime}ms minimum load time.`);
+
+                 setTimeout(() => {
+                     console.log("[Loading Logic] Minimum load time passed. Removing content-hidden class and showing content.");
+                     document.body.classList.remove('content-hidden');
+                     main.style.display = 'flex';
+
+                     anime({
+                          targets: loader,
+                          opacity: [1, 0],
+                          duration: 1000,
+                          easing: 'easeOutQuad',
+                          complete: () => {
+                             loader.style.display = 'none';
+                             console.log("[Loading Logic] Loader hidden. Page is ready.");
+                             startLoopingGlowAnimation();
+                             updateGlowParallax();
+                             // Initial state of audio player/disk/glow is handled by JS startup now
+
+                             // --- CHANGES START HERE ---
+                             // Attempt to play the audio after the loader is hidden
+                             audioElementForLoad.play().catch(error => {
+                                 console.log("Attempted autoplay after loader faded, but blocked:", error);
+                                 // Handle the case where autoplay is blocked (e.g., show a message, keep paused icon)
+                                 const toggleBtn = document.querySelector(".toggle");
+                                 if (toggleBtn) toggleBtn.textContent = "▶"; // Ensure the play icon is shown
+                             });
+                             // --- CHANGES END HERE ---
+
+                          }
+                     });
+
+                 }, remainingTime);
+             }
+        }
+
+
+        const sectionAnimationState = new Map();
+        const animatedLists = new Set();
+
+         function animateListItems(section) {
+              const listItems = section.querySelectorAll('.intense-list li');
+              if (listItems.length === 0 || animatedLists.has(section)) {
+                  return;
+              }
+              animatedLists.add(section);
+                console.log(`[Section Anim] Animating list items for ${section.id || section.className}`);
+              anime({
+                  targets: listItems,
+                  opacity: [0, 1],
+                  translateY: [20, 0],
+                  duration: 600,
+                  easing: 'easeOutQuad',
+                  delay: anime.stagger(100)
+              });
+         }
+
+
+        function animateSection(section, direction = 'in') {
+             if (!section) {
+                 console.warn("[Section Anim] animateSection called with null/undefined section.");
+                 return;
+             }
+             const currentState = sectionAnimationState.get(section) || 'out';
+             console.log(`[Section Anim] animateSection called for ${section.id || section.className || 'unknown section'}, direction: ${direction}, current state: ${currentState}`);
+
+             if (direction === 'in' && currentState !== 'in') {
+                 sectionAnimationState.set(section, 'in');
+                 section.classList.remove('bump');
+                  console.log(`[Section Anim] Starting 'in' animation for ${section.id || section.className}`);
+                 anime({
+                     targets: section,
+                     opacity: [anime.get(section, 'opacity') || 0, 1],
+                     translateY: [anime.get(section, 'translateY') || 100, 0],
+                     duration: 800,
+                     easing: 'easeOutExpo',
+                     complete: () => {
+                          console.log(`[Section Anim] 'in' animation complete for ${section.id || section.className}`);
+                          section.classList.add('bump');
+                          anime({
+                                targets: section,
+                                boxShadow: ['0 0 20px rgba(255, 255, 255, 0.08)', '0 0 50px rgba(255,255,255,0.2)'],
+                                duration: 500,
+                                easing: 'easeOutSine',
+                                direction: 'alternate',
+                                loop: 1,
+                                complete: () => {
+                                     section.style.boxShadow = '0 0 50px rgba(255,255,255,0.2)';
+                                }
+                           });
+                          setTimeout(() => section.classList.remove('bump'), 500);
+                          animateListItems(section);
+                      }
+                 });
+             } else if (direction === 'out' && currentState === 'in') {
+                 sectionAnimationState.set(section, 'out');
+                 section.classList.remove('bump');
+                  console.log(`[Section Anim] Starting 'out' animation for ${section.id || section.className}`);
+                  const listItems = section.querySelectorAll('.intense-list li');
+                  if (listItems.length > 0) {
+                      anime({
+                          targets: listItems,
+                          opacity: 0,
+                          translateY: 20,
+                          duration: 300,
+                          easing: 'easeInQuad'
+                      });
+                       animatedLists.delete(section);
+                  }
+                 anime({
+                     targets: section,
+                     opacity: [1, 0],
+                     translateY: [0, -50],
+                     duration: 500,
+                     easing: 'easeInExpo',
+                     complete: () => {
+                          console.log(`[Section Anim] 'out' animation complete for ${section.id || section.className}`);
+                          section.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.08)';
+                      }
+                 });
+             }
+        }
+
+         let observer;
+         const scrollContainerElement = document.querySelector('.scroll-container');
+         const sectionsElements = document.querySelectorAll('.section');
+
+         if (scrollContainerElement && sectionsElements.length > 0) {
+             const observerOptions = {
+                  root: scrollContainerElement,
+                  rootMargin: '0px 0px -15% 0px',
+                  threshold: 0.1
+             };
+             observer = new IntersectionObserver((entries) => {
+                   console.log("[Observer] Observer callback fired.");
+                  entries.forEach(entry => {
+                       console.log(`[Observer] Entry: ${entry.target.id || entry.target.className}, isIntersecting: ${entry.isIntersecting}, Content Hidden: ${document.body.classList.contains('content-hidden')}`);
+                       if (document.body.classList.contains('content-hidden')) {
+                           return;
+                       }
+                       if (entry.isIntersecting) {
+                           animateSection(entry.target, 'in');
+                       } else {
+                           const rect = entry.target.getBoundingClientRect();
+                           const rootRect = observer.root.getBoundingClientRect();
+                            const rootMarginBottom = parseInt(observerOptions.rootMargin.split(' ')[2], 10) / 100 * rootRect.height;
+                            const rootMarginTop = parseInt(observerOptions.rootMargin.split(' ')[0], 10) / 100 * rootRect.height;
+
+                            if (rect.bottom < rootRect.top - rootMarginTop || rect.top > rootRect.bottom + rootMarginBottom)
+                            {
+                                 if (sectionAnimationState.get(entry.target) === 'in') {
+                                     animateSection(entry.target, 'out');
+                                 }
+                            }
+                       }
+                   });
+             }, observerOptions);
+
+             sectionsElements.forEach(section => {
+                  observer.observe(section);
+                   console.log(`[Observer] Observing section: ${section.id || section.className}`);
+               });
+         } else {
+              console.error("FATAL ERROR: .scroll-container or .section elements not found. Intersection Observer not initialized.");
+              initialAnimationsComplete = true;
+              tryFinishLoading();
+         }
+
+
+         function startLoopingGlowAnimation() {
+              console.log("[Glow Anim] Starting looping glow animation.");
+              if (cornerGlows.length === 0) {
+                   console.warn("[Glow Anim] Corner glows not found, cannot start loop.");
+                   return;
+              }
+              anime.remove(cornerGlows);
+              anime({
+                  targets: cornerGlows,
+                  scale: [1, 1.02],
+                  opacity: [0.7, 0.6],
+                  duration: 4000,
+                  easing: 'easeInOutSine',
+                  direction: 'alternate',
+                  loop: true
+              });
+         }
+
+        function updateGlowParallax() {
+             if (document.body.classList.contains('content-hidden') || !scrollContainer) {
+                 return;
+             }
+             const scrollTop = scrollContainer.scrollTop;
+             const parallaxFactor = 0.1;
+
+             cornerGlows.forEach(glow => {
+                 let translateY = scrollTop * parallaxFactor;
+                 const glowRect = glow.getBoundingClientRect();
+                 const viewportCenterY = window.innerHeight / 2;
+                 const glowCenterY = glowRect.top + glowRect.height / 2;
+                 if (glowCenterY > viewportCenterY) {
+                      translateY = scrollTop * -parallaxFactor;
+                 } else {
+                      translateY = scrollTop * parallaxFactor;
+                 }
+                 anime.set(glow, { translateY: translateY });
+             });
+        }
+
+         if (scrollContainer) {
+              scrollContainer.addEventListener('scroll', updateGlowParallax);
+         }
+
+
+        const inviteCode = 'PJCSsBnaZc';
+        const totalMembersElement = document.getElementById('total-members');
+        const onlineMembersElement = document.getElementById('online-members');
+
+        async function fetchMemberCounts() {
+             console.log(`[Discord Fetch] Attempting to fetch member counts using invite code: ${inviteCode}`);
+            const apiUrl = `https://discord.com/api/v9/invites/${inviteCode}?with_counts=true`;
+
+            if (!totalMembersElement || !onlineMembersElement) {
+                console.error("[Discord Fetch] Member count display elements not found in HTML!");
+                discordFetchComplete = true;
+                console.log("[Discord Fetch] Marked complete due to missing elements.");
+                tryFinishLoading();
+                return;
+            }
+
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    console.error(`[Discord Fetch] HTTP error! Status: ${response.status}`);
+                    console.error(`[Discord Fetch] API URL attempted: ${apiUrl}`);
+                    console.warn("[Discord Fetch] Ensure your invite code is valid and check for network issues.");
+                    try { const errorBody = await response.text(); console.error("[Discord Fetch] Response body (first 200 chars):", errorBody.substring(0, 200)); } catch (e) { /* ignore */ }
+                    totalMembersElement.textContent = 'N/A';
+                    onlineMembersElement.textContent = 'N/A';
+                } else {
+                    const data = await response.json();
+                    if (typeof data.approximate_member_count === 'undefined' || typeof data.approximate_presence_count === 'undefined') {
+                         console.warn("[Discord Fetch] Invite data missing or incomplete. Cannot display counts.");
+                         console.log("[Discord Fetch] Full API response:", data);
+                        totalMembersElement.textContent = 'N/A';
+                        onlineMembersElement.textContent = 'N/A';
+                    } else {
+                        const oldTotal = totalMembersElement.textContent;
+                        const oldOnline = onlineMembersElement.textContent;
+                        const newTotal = data.approximate_member_count.toLocaleString();
+                        totalMembersElement.textContent = newTotal;
+                        if (oldTotal !== '...' && oldTotal !== 'N/A' && oldTotal !== newTotal) { pulseCount(totalMembersElement); }
+                        const newOnline = data.approximate_presence_count.toLocaleString();
+                        onlineMembersElement.textContent = newOnline;
+                         if (oldOnline !== '...' && oldOnline !== 'N/A' && oldOnline !== newOnline) { pulseCount(onlineMembersElement); }
+                         console.log("[Discord Fetch] Successful. Counts updated.");
+                    }
+                }
+            } catch (error) {
+                console.error("[Discord Fetch] Could not fetch Discord member counts:", error);
+                console.warn("[Discord Fetch] Check for network issues or browser extensions blocking the request.");
+                totalMembersElement.textContent = 'N/A';
+                onlineMembersElement.textContent = 'N/A';
+            } finally {
+                discordFetchComplete = true;
+                 console.log("[Discord Fetch] Marked complete.");
+                tryFinishLoading();
+            }
+        }
+
+        function pulseCount(element) {
+             anime.remove(element);
+             anime({
+                 targets: element,
+                 scale: [1, 1.1, 1],
+                 opacity: [1, 0.8, 1],
+                 duration: 600,
+                 easing: 'easeInOutSine',
+                 loop: 1
+             });
+         }
+
+         if (totalMembersElement && onlineMembersElement) {
+              setInterval(fetchMemberCounts, 3000);
+              console.log("[Discord Fetch] Set up interval for member count fetch.");
+         } else {
+              console.error("[Discord Fetch] Could not set up interval, member count elements not found.");
+         }
+
+        function navigateTo(page) {
+            console.log(`Navigating to: /${page}/index.html`);
+            const cursorElement = document.getElementById('custom-cursor');
+            const isCustomCursorVisible = cursorElement && window.getComputedStyle(cursorElement).display !== 'none';
+            const delay = isCustomCursorVisible ? 300 : 0;
+            setTimeout(() => { window.location.href = `/${page}/index.html`; }, delay);
+        }
+
+        const cursor = document.getElementById('custom-cursor');
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0; // Store target position for hover checks
+        const easeFactor = 0.15;
+        let isMouseInsideWindow = true;
+
+        document.addEventListener('mousemove', (e) => {
+            targetX = e.clientX;
+            targetY = e.clientY;
+            // Add the album art container and player container to elements that affect cursor style
+            const targetElement = e.target.closest('button.cta, a.cta, .music-widget button, .music-widget input[type="range"], .album-art-container, .audio-player-container');
+
+            if (targetElement) {
+                anime({
+                    targets: cursor,
+                    width: 8, height: 8,
+                    backgroundColor: 'rgba(255, 255, 255, 1)',
+                    duration: 200, easing: 'easeOutQuad', autoplay: true
+                });
+            } else {
+                anime({
+                    targets: cursor,
+                    width: 16, height: 16,
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    duration: 200, easing: 'easeOutQuad', autoplay: true
+                });
+            }
+        });
+
+        function updateCursor() {
+            mouseX += (targetX - mouseX) * easeFactor;
+            mouseY += (targetY - mouseY) * easeFactor;
+            cursor.style.left = `${mouseX}px`;
+            cursor.style.top = `${mouseY}px`;
+            requestAnimationFrame(updateCursor);
+        }
+
+        const cursorMediaQuery = window.matchMedia('(max-width: 768px), (pointer: coarse)');
+        function handleCursorMediaQuery(event) {
+            if (event.matches) {
+                cursor.style.display = 'none';
+                document.body.style.cursor = 'auto';
+            } else {
+                cursor.style.display = 'block';
+                document.body.style.cursor = 'none';
+                 if (isMouseInsideWindow) { anime({ targets: cursor, opacity: 1, duration: 100, autoplay: true }); }
+                 else { anime({ targets: cursor, opacity: 0, duration: 100, autoplay: true }); }
+            }
+        }
+        handleCursorMediaQuery(cursorMediaQuery);
+        cursorMediaQuery.addListener(handleCursorMediaQuery);
+
+        updateCursor();
+
+        document.addEventListener('mouseleave', () => {
+            isMouseInsideWindow = false;
+            if (window.getComputedStyle(cursor).display !== 'none') {
+                 anime({ targets: cursor, opacity: 0, duration: 300, easing: 'easeOutQuad', autoplay: true });
+            }
+        });
+
+        document.addEventListener('mouseenter', (e) => {
+            isMouseInsideWindow = true;
+             if (window.getComputedStyle(cursor).display !== 'none') {
+                 targetX = e.clientX; targetY = e.clientY; mouseX = e.clientX; mouseY = e.clientY;
+                 cursor.style.left = `${mouseX}px`; cursor.style.top = `${mouseY}px`;
+                  anime({ targets: cursor, opacity: 1, duration: 300, easing: 'easeOutQuad', autoplay: true });
+            }
+        });
+
+        const allButtons = document.querySelectorAll('.cta');
+        allButtons.forEach(button => {
+            const glowId = button.getAttribute('data-glow-id');
+            const glow = document.getElementById(glowId);
+            const isJoinButton = button.href && button.href.includes('discord.gg');
+            const defaultStyles = { backgroundColor: button.style.backgroundColor || 'transparent', borderColor: button.style.borderColor || '#fff', boxShadow: button.style.boxShadow || 'none', color: button.style.color || '#fff' };
+
+            button.addEventListener('mousemove', (e) => {
+                if (glow) {
+                    const rect = button.getBoundingClientRect();
+                    const glowOriginOffset = 75;
+                    const mouseXInsideButton = e.clientX - rect.left;
+                    const mouseYInsideButton = e.clientY - rect.top;
+                    const targetGlowLeft = mouseXInsideButton - glowOriginOffset;
+                    const targetGlowTop = mouseYInsideButton - glowOriginOffset;
+                    anime({ targets: glow, left: targetGlowLeft, top: targetGlowTop, duration: 80, easing: 'easeOutSine', autoplay: true });
+                }
+            });
+
+            button.addEventListener('mouseenter', (e) => {
+                 anime({ targets: button, scale: 1.05, boxShadow: '0 0 15px rgba(255, 255, 255, 0.2)', borderColor: 'rgba(255, 255, 255, 0.7)', duration: 300, easing: 'easeOutQuad', autoplay: true });
+                 if (!isJoinButton) { anime({ targets: button, backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#fff', duration: 300, easing: 'easeOutQuad', autoplay: true }); }
+                 if (glow) { anime({ targets: glow, opacity: 1, duration: 300, easing: 'easeOutQuad', autoplay: true }); }
+            });
+
+            button.addEventListener('mouseleave', (e) => {
+                 anime({ targets: button, scale: 1, boxShadow: defaultStyles.boxShadow, borderColor: defaultStyles.borderColor, duration: 300, easing: 'easeOutQuad', autoplay: true });
+                 if (!isJoinButton) { anime({ targets: button, backgroundColor: defaultStyles.backgroundColor, color: defaultStyles.color, duration: 300, easing: 'easeOutQuad', autoplay: true }); }
+                 if (glow) { anime({ targets: glow, opacity: 0, duration: 300, easing: 'easeOutQuad', autoplay: true }); }
+            });
+
+             button.addEventListener('click', (e) => {
+                 anime({ targets: button, scale: [anime.get(button, 'scale'), 0.95, 1], duration: 300, easing: 'easeInOutSine', autoplay: true });
+             });
+        });
+
+
+        console.log("Script finished loading and executing.");
+
+        // --- JavaScript Ends Here ---
+    </script>
+</body>
+</html>

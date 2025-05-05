@@ -1,0 +1,558 @@
+body {
+    overflow: hidden;
+    -webkit-overflow-scrolling: touch;
+    background-color: #000015;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative;
+    text-align: center;
+    font-family: 'Montserrat', sans-serif;
+    cursor: none; /* Hide default cursor - custom cursor handles it */
+}
+
+/* --- Album Art Disk Styles --- */
+.album-art-container {
+    width: 50px; /* Reduced size */
+    height: 50px;
+    position: absolute;
+    top: 660px; /* Adjust vertical position as needed */
+    right: 20px; /* Position to the right, matching player area */
+    /* Removed transformX(-50%) as it's right-aligned now */
+    z-index: 10; /* Ensure it's above other main content */
+    pointer-events: auto; /* Allow hover events */
+    cursor: none; /* Handled by custom cursor JS */
+     /* Add subtle pulsating glow */
+     box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+     transition: box-shadow 0.3s ease;
+     /* Initial state is visible - controlled by JS initially */
+}
+
+.album-art-container:hover {
+     box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); /* Stronger glow on hover */
+}
+
+.album-art {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%; /* Make it round */
+    background-size: cover; /* Ensure image covers the area */
+    background-position: bottom;
+    background-image: url('images/default-album-art.jpg'); /* Default or placeholder image */
+    border: 2px solid rgba(255, 255, 255, 0.4); /* White border */
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4), inset 0 0 4px rgba(255, 255, 255, 0.15); /* Inner and outer shadow */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions */
+}
+
+/* Rotation animation */
+@keyframes rotateDisk {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Apply rotation when the 'playing' class is added by JS */
+.album-art.playing {
+    animation: rotateDisk 20s linear infinite; /* Adjust duration for speed */
+}
+/* --- End Album Art Disk Styles --- */
+
+
+/* Music Player Container - Handles Fixed Positioning and Show/Hide via JS Opacity/Transform */
+.audio-player-container {
+    z-index: 999;
+    position: fixed; /* Keep fixed */
+    bottom: 20px; /* Stick to the bottom */
+    right: 20px; /* Stick to the right */
+    /* Initial state handled by JS (opacity: 0, pointer-events: none, transform set by anime.set) */
+     transform: translateY(0) scale(1); /* Initial state for JS animation */
+     /* Removed CSS transition - handled by anime.js */
+}
+
+ /* Glow behind the player - NEW */
+.audio-player-container .player-glow {
+     position: absolute;
+     width: 120px; /* Size of the glow */
+     height: 120px;
+     border-radius: 50%;
+     /* Position slightly behind/around the widget */
+     bottom: -30px; /* Adjusted position */
+     right: -30px; /* Adjusted position */
+     background: radial-gradient(circle at center, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0)); /* White glow, slightly stronger */
+     z-index: -1; /* Behind the widget */
+     pointer-events: none; /* Cannot interact with glow */
+     opacity: 0; /* Initial state hidden - controlled by JS */
+     will-change: opacity, transform; /* Hint for smooth animation */
+}
+
+
+/* .audio-player is just a flex container inside audio-player-container */
+.audio-player {
+    display: flex;
+    gap: 10px; /* Reduced gap between music-widget and audio tag if audio tag was visible */
+    align-items: center;
+    position: relative; /* Needed for player-glow absolute positioning relative to it */
+    z-index: 1; /* Ensure widget content is above the glow */
+}
+
+/* The Glassy Widget Itself */
+.music-widget {
+     /* Reduced size, cleaner look */
+    background: rgba(255, 255, 255, 0.05); /* Even more transparent */
+    border-radius: 15px;
+    backdrop-filter: blur(25px); /* Stronger blur */
+    -webkit-backdrop-filter: blur(25px); /* Stronger blur */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Lighter border */
+    padding: 10px 15px; /* Smaller padding */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); /* Softer shadow */
+    display: flex;
+    flex-direction: row; /* Layout is horizontal */
+    align-items: center;
+    gap: 10px; /* Reduced gap between song-info, controls, volume */
+}
+
+/* Container for Title and Progress */
+.music-widget .song-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px; /* Reduced gap */
+    min-width: 120px; /* Smaller width */
+    color: #fff;
+    font-size: 0.8rem; /* Smaller font */
+}
+
+.music-widget .song-title {
+    font-size: 0.9rem; /* Smaller font */
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.music-widget .time-display {
+    font-size: 0.7rem; /* Smaller font */
+    color: rgba(255, 255, 255, 0.7); /* Slightly more transparent */
+}
+
+/* Play/Prev/Next Controls */
+.music-widget .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Reduced gap */
+}
+
+.music-widget button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7); /* Softer color */
+    font-size: 16px; /* Smaller size */
+    cursor: none; /* Handled by custom cursor JS */
+    transition: transform 0.2s ease, color 0.2s ease;
+    padding: 0 3px; /* Smaller padding */
+}
+
+.music-widget button:hover {
+    transform: scale(1.1);
+    color: white;
+}
+
+.music-widget button:active {
+    transform: scale(0.9);
+    color: rgba(255, 255, 255, 0.5); /* Even more transparent */
+}
+
+
+/* --- Slider Styles --- */
+
+.music-widget input[type="range"] {
+    -webkit-appearance: none; /* Remove default webkit styles */
+    appearance: none;
+    background: transparent; /* Hide default track */
+    cursor: none; /* Handled by custom cursor JS */
+    width: 100%; /* Full width of parent */
+    margin: 0;
+    padding: 0;
+    outline: none; /* Remove outline */
+}
+
+/* Progress Bar */
+.music-widget .progress-bar {
+    height: 4px; /* Thinner */
+    flex-grow: 1;
+    max-width: 150px; /* Smaller width */
+}
+
+/* Volume Control Container and Slider */
+.music-widget .volume-control {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Reduced gap */
+    width: 60px; /* Smaller width */
+}
+.music-widget .volume-slider {
+    height: 3px; /* Thinner */
+    flex-grow: 1;
+}
+
+
+/* Track Styles for Webkit (Chrome, Safari) */
+.music-widget input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 3px; /* Shared track height */
+    background: rgba(255, 255, 255, 0.2); /* Glassy track color */
+    border-radius: 2px;
+    cursor: none;
+    transition: all 0.2s ease;
+}
+
+.music-widget .progress-bar::-webkit-slider-runnable-track {
+     height: 4px; /* Specific progress bar track height */
+}
+
+.music-widget input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px; /* Smaller thumb size */
+    height: 10px; /* Smaller thumb size */
+    background: white; /* White thumb */
+    border-radius: 50%;
+    cursor: none;
+    margin-top: -3.5px; /* Adjust to center thumb vertically on track */
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+    transition: all 0.2s ease;
+}
+
+.music-widget .progress-bar::-webkit-slider-thumb {
+     margin-top: -3px; /* Adjust for progress bar track height */
+}
+
+
+/* Track Styles for Firefox */
+.music-widget input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 3px; /* Shared track height */
+    background: rgba(255, 255, 255, 0.2); /* Glassy track color */
+    border-radius: 2px;
+    cursor: none;
+}
+.music-widget .progress-bar::-moz-range-track {
+     height: 4px; /* Specific progress bar track height */
+}
+
+.music-widget input[type="range"]::-moz-range-thumb {
+    width: 10px; /* Smaller thumb size */
+    height: 10px; /* Smaller thumb size */
+    background: white; /* White thumb */
+    border-radius: 50%;
+    cursor: none;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+/* Hover styles for sliders */
+.music-widget input[type="range"]:hover::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.3); /* Slightly less opaque on hover */
+}
+.music-widget input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+.music-widget input[type="range"]:hover::-moz-range-track {
+    background: rgba(255, 255, 255, 0.3); /* Slightly less opaque on hover */
+}
+.music-widget input[type="range"]:hover::-moz-range-thumb {
+     transform: scale(1.1);
+     box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+/* Ensure default cursor shows on touch devices or when custom cursor is off */
+@media (max-width: 768px), (pointer: coarse) {
+     .music-widget input[type="range"],
+     .music-widget button,
+     .album-art-container { /* Also apply pointer cursor to the disk */
+         cursor: pointer;
+     }
+     /* Ensure player is visible on mobile as hover is less reliable */
+      .audio-player-container {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+          bottom: 10px; right: 10px; /* Adjust position on mobile */
+          transform: none !important; /* Reset any JS transform on mobile */
+          scale: 1 !important; /* Reset any JS scale on mobile */
+      }
+      .audio-player-container .player-glow {
+          /* Ensure glow is visible on mobile if player is always visible */
+           opacity: 0.7 !important; /* Make glow visible */
+           transform: none !important; /* Reset any JS transform */
+           scale: 1 !important; /* Reset any JS scale */
+           bottom: -30px; /* Adjusted for mobile */
+           right: -30px; /* Adjusted for mobile */
+           left: auto; /* Reset left */
+           top: auto; /* Reset top */
+      }
+      .album-art-container {
+          /* Hide album art on mobile when player is always visible */
+           opacity: 0 !important;
+           pointer-events: none !important;
+           /* Position it off-screen or hidden if you don't want it taking space */
+           /* display: none; */ /* Could use display: none; instead of opacity/pointer-events */
+      }
+}
+
+
+/* --- End Slider Styles --- */
+
+
+/* Add a class to body initially to hide scrollable content */
+body.content-hidden .scroll-container > .main,
+body.content-hidden .scroll-container > .section-container {
+    visibility: hidden; /* Hide main content and sections completely initially */
+}
+
+
+/* Add a border to the entire page */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+    z-index: 100;
+    border-radius: 0;
+    box-sizing: border-box;
+}
+
+.scroll-container {
+    height: 100vh;
+    overflow-y: auto; /* This container handles scrolling */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    z-index: 2;
+    /* Cross-browser scrollbar styles */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
+}
+
+/* Custom Scrollbar Styles (Webkit) */
+.scroll-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.cta {
+    display: inline-block;
+    text-align: center;
+    padding: 12px 24px;
+    border-radius: 12px;
+    position: relative;
+    text-decoration: none;
+    overflow: hidden;
+    font-weight: 600;
+    /* Color, border, background, box-shadow handled by JS animations on hover */
+    color: #fff; /* Default color */
+    border: 2px solid #fff; /* Default border */
+    background: transparent; /* Default background */
+    box-shadow: none; /* Default box-shadow */
+    cursor: none; /* Cursor handled by custom cursor */
+    min-width: 8.23em;
+    font-size: 1.25rem;
+}
+.cta .link-text {
+    position: relative; z-index: 5; color: #fff; opacity: 1; display: block; transition: opacity 500ms, transform 200ms ease;
+}
+
+
+.hover-glow {
+    height: 150px; width: 150px;
+    background: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.5), transparent);
+    position: absolute; border-radius: 100%; z-index: 2; top: -75px; left: -75px;
+    opacity: 0; pointer-events: none;
+}
+
+#loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0f0f0f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 1;
+}
+
+.loader-text {
+    font-size: 2rem;
+    letter-spacing: 2px;
+    animation: pulse 1s infinite alternate;
+    color: #eee;
+}
+
+@keyframes pulse {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    padding: 20px;
+    position: relative; /* Needed for absolute positioning of album art */
+    z-index: 2;
+    box-sizing: border-box;
+    padding-bottom: 50px; /* Add padding for the album art below title */
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    color: #fff;
+}
+
+.member-count-display {
+    margin-top: 10px;
+    margin-bottom: 30px;
+    color: #ccc;
+    font-size: 1.1rem;
+}
+.member-count-display span {
+    font-weight: bold;
+    color: #fff;
+    margin: 0 3px;
+    display: inline-block; /* Needed for transform animation */
+}
+.member-count-display #online-members {
+    color: #23a55a;
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 0;
+}
+#join-button-group {
+    margin-bottom: 30px;
+}
+
+.section-container {
+    display: flex; justify-content: center; padding: 20px 20px; margin-top: 5vh; position: relative; z-index: 2; padding-bottom: 200px;
+}
+
+.section {
+    max-width: 800px; width: 90%; text-align: left; padding: 40px;
+    background: rgba(255, 255, 255, 0.03); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Initial state for JS animation */
+    opacity: 0;
+    transform: translateY(100px);
+    box-sizing: border-box;
+    /* Default box-shadow, will be animated on scroll */
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+}
+.section.bump {
+    animation: bump 0.5s ease;
+}
+@keyframes bump {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+}
+
+.section h2, .section-title {
+    font-size: 2.5rem; margin-bottom: 20px; text-align: center; text-shadow: 0 0 10px rgba(255,255,255,0.15); color: #fff;
+}
+.section ul { list-style: none; padding-left: 0; }
+.section li { font-size: 1.1rem; margin-bottom: 15px; color: #ccc; }
+
+.intense-list { list-style: none; padding-left: 0; }
+.intense-list li {
+    display: flex; align-items: center; margin-bottom: 15px; padding-left: 0;
+    /* Initial state for individual item animation */
+    opacity: 0;
+    transform: translateY(20px);
+}
+.list-icon { margin-right: 12px; font-size: 1.1rem; color: #fff; width: 20px; text-align: center; flex-shrink: 0; }
+.list-text { font-size: 1.1rem; color: #eee; font-weight: normal; letter-spacing: 0.3px; text-shadow: none; flex: 1; }
+
+.cursor {
+    position: fixed; width: 16px; height: 16px; background: rgba(255, 255, 255, 0.7); border-radius: 50%;
+    pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); opacity: 0;
+}
+
+
+.corner-glow {
+    position: fixed; width: 150px; height: 150px; border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(66, 153, 225, 0.15), rgba(0, 0, 0, 0.85));
+    box-shadow: 0 0 50px rgba(66, 153, 225, 0.05);
+    z-index: 1; opacity: 0; pointer-events: none; will-change: transform, opacity;
+}
+.top-left { top: -75px; left: -75px; }
+.top-right { top: -75px; right: -75px; }
+.bottom-left { bottom: -75px; left: -75px; }
+.bottom-right { bottom: -75px; right: -75px; }
+
+
+@media screen and (max-width: 768px), (pointer: coarse) {
+     .music-widget input[type="range"],
+     .music-widget button,
+     .album-art-container {
+         cursor: pointer;
+     }
+     /* Ensure player is visible on mobile as hover is less reliable */
+      .audio-player-container {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+          bottom: 10px; right: 10px; /* Adjust position on mobile */
+          transform: none !important; /* Reset any JS transform on mobile */
+          scale: 1 !important; /* Reset any JS scale on mobile */
+      }
+      .audio-player-container .player-glow {
+          /* Ensure glow is visible on mobile if player is always visible */
+           opacity: 0.7 !important; /* Make glow visible */
+           transform: none !important; /* Reset any JS transform */
+           scale: 1 !important; /* Reset any JS scale */
+           bottom: -30px; /* Adjusted for mobile */
+           right: -30px; /* Adjusted for mobile */
+           left: auto; /* Reset left */
+           top: auto; /* Reset top */
+      }
+      .album-art-container {
+          /* Hide album art on mobile when player is always visible */
+           opacity: 0 !important;
+           pointer-events: none !important;
+           /* Position it off-screen or hidden if you don't want it taking space */
+           /* display: none; */ /* Could use display: none; instead of opacity/pointer-events */
+      }
+}
