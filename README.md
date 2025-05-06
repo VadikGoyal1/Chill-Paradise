@@ -24,11 +24,11 @@ This custom landing page showcases your Discord community with glowing UI, smoot
 ## 📁 Project Structure
 
 📂 Chill-Paradise/
-├── index.html # Main HTML page
-├── style.css # Styling for layout and visuals
-├── /songs/ # Music files
-├── /images/ # Album art & visuals
-└── README.md # Project documentation
+  ├── index.html # Main HTML page
+  ├── style.css # Styling for layout and visuals
+  ├── /songs/ # Music files
+  ├── /images/ # Album art & visuals
+  └── README.md # Project documentation
 
 ---
 
